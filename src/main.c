@@ -23,9 +23,16 @@ int main(int argc, char *argv[])
     {
       break;
     }
-
-    // For simplicity, we will just print the command back to the user
-    printf("%s: command not found\n", command);
+    else if (strncmp(command, "echo ", 5) == 0)
+    {
+      // Print the argument after "echo "
+      printf("%s\n", command + 5);
+    }
+    else
+    {
+      // For simplicity, we will just print the command back to the user
+      printf("%s: command not found\n", command);
+    }
   }
 
   return 0;
