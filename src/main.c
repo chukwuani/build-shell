@@ -28,6 +28,20 @@ int main(int argc, char *argv[])
       // Print the argument after "echo "
       printf("%s\n", command + 5);
     }
+    else if (strncmp(command, "type ", 5) == 0)
+    {
+      char arg[1024];
+      strcpy(arg, command + 5);
+
+      if (strcmp(arg, "type") == 0 || strcmp(arg, "echo") == 0 || strcmp(arg, "exit") == 0)
+      {
+        printf("%s is a shell builtin\n", arg);
+      }
+      else
+      {
+        printf("%s: not found\n", arg);
+      }
+    }
     else
     {
       // For simplicity, we will just print the command back to the user
