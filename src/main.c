@@ -11,11 +11,20 @@ int main(int argc, char *argv[])
   {
     printf("$ ");
 
+    // Read a line of input from the user
     char command[1024];
     fgets(command, sizeof(command), stdin);
 
     // Remove the newline character if present
     command[strcspn(command, "\n")] = '\0';
+
+    // Check if the command is "exit"
+    if (strcmp(command, "exit") == 0)
+    {
+      break;
+    }
+
+    // For simplicity, we will just print the command back to the user
     printf("%s: command not found\n", command);
   }
 
