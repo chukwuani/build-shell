@@ -2,14 +2,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-int main(int argc, char *argv[])
+int main(int argc, char** argv)
 {
   // Flush after every printf
   setbuf(stdout, NULL);
 
+  // Infinite loop to read commands from the user
   while (1)
   {
-    printf("$ ");
+    puts("Welcome to my shell! Type 'exit' to quit.");
+    fputs("Hello World", stdout);
 
     // Read a line of input from the user
     char command[1024];
