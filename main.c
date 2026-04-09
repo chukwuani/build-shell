@@ -3,6 +3,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "utils/utils.h"
+
 int main(int argc, char **argv)
 {
   // Flush after every printf
@@ -38,6 +40,8 @@ int main(int argc, char **argv)
       char arg[1024];
       strcpy(arg, command + 5);
 
+      trimTrailing(arg);
+
       if (strcmp(arg, "type") == 0 || strcmp(arg, "echo") == 0 || strcmp(arg, "exit") == 0)
       {
         printf("%s is a shell builtin\n", arg);
@@ -58,7 +62,7 @@ int main(int argc, char **argv)
           int len = strlen(dir);
           if (dir[len - 1] == '\\')
           dir[len - 1] = '\0';
-          
+
           snprintf(fullPath, sizeof(fullPath), "%s\\%s.exe", dir, arg);
 
           // Check if fullpath is executable
