@@ -66,11 +66,22 @@ int main(int argc, char **argv)
         }
       }
     }
+    else if (strncmp(input, "cd ", 3) == 0)
+    {
+      char dir[MAX_INPUT_SIZE];
+      strcpy(dir, input + 3);
+
+      if (chdir(dir) != 0)
+      {
+        fprintf(stderr, "%s: No such file or directory\n", dir);
+      }
+    }
+
     else
     {
       char *token = strtok(input, " \t");
       char *args[MAX_ARGS]; // This is our own "argv"
-      int arg_count = 0;  // This is our own "argc"
+      int arg_count = 0;    // This is our own "argc"
 
       while (token != NULL && arg_count < MAX_ARGS - 1)
       {
@@ -85,9 +96,6 @@ int main(int argc, char **argv)
 
       // Execute
       execute(args);
-
-      // For simplicity, we will just print the input back to the user
-      // printf("%s: input not found\n", input);
     }
   }
 

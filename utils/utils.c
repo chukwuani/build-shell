@@ -4,9 +4,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/types.h> // pid_t
-#include <sys/wait.h>  // wait()
-#include <unistd.h>    // fork(), execvp()
+#include <sys/types.h>
+#include <sys/wait.h>  
+#include <unistd.h>  
 
 void trimTrailing(char *str)
 {
