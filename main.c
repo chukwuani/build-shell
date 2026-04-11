@@ -38,51 +38,101 @@ int main(int argc, char **argv)
       char arg[MAX_INPUT_SIZE];
       strcpy(arg, input + 5);
 
-      // Check if the argument is enclosed in single quotes
-      if (arg[0] == '\'' && arg[strlen(arg) - 1] == '\'')
+      if (arg[0] == '\'')
       {
-        // Remove the single quotes from the back
-        // Copy the remain content except the first quote back into arg
-        arg[strlen(arg) - 1] = '\0';
-        memmove(arg, arg + 1, strlen(arg));
-      }
-      else
-      {
-        // Else split by delimeter " " and reconstruct the string with spaces in between
+        // Check if the argument is enclosed in single quotes
+        if (arg[0] == '\'' && arg[strlen(arg) - 1] == '\'')
+        {
+          // Remove the single quotes from the back
+          // Copy the remain content except the first quote back into arg
+          arg[strlen(arg) - 1] = '\0';
+          memmove(arg, arg + 1, strlen(arg));
+        }
+        else
+        {
+          // Else split by delimeter ' ' and reconstruct the string with spaces in between
+          char *temp = strdup(arg);
+          char result[MAX_INPUT_SIZE] = "";
+
+          char *token = strtok(temp, " ");
+
+          while (token != NULL)
+          {
+            strcat(result, token);
+            strcat(result, " ");
+            token = strtok(NULL, " ");
+          }
+
+          strcpy(arg, result);
+          free(temp);
+        }
+
+        // Split by delimeter '\'' and reconstruct the string
         char *temp = strdup(arg);
         char result[MAX_INPUT_SIZE] = "";
 
-        char *token = strtok(temp, " ");
+        char *token = strtok(temp, "\'");
 
         while (token != NULL)
         {
+          trimTrailing(token);
           strcat(result, token);
-          strcat(result, " ");
-          token = strtok(NULL, " ");
+          token = strtok(NULL, "\'");
         }
 
         strcpy(arg, result);
         free(temp);
+
+        // Remove trailing spaces from the argument
+        trimTrailing(arg);
       }
-
-      // Split by delimeter '\'' and reconstruct the string
-      char *temp = strdup(arg);
-      char result[MAX_INPUT_SIZE] = "";
-
-      char *token = strtok(temp, "\'");
-
-      while (token != NULL)
+      else if (arg[0] == '"')
       {
-        trimTrailing(token);   
-        strcat(result, token);
-        token = strtok(NULL, "\'");
+        // Check if the argument is enclosed in double quotes
+        if (arg[0] == '"' && arg[strlen(arg) - 1] == '"')
+        {
+          // Remove the single quotes from the back
+          // Copy the remain content except the first quote back into arg
+          arg[strlen(arg) - 1] = '\0';
+          memmove(arg, arg + 1, strlen(arg));
+        }
+        else
+        {
+          char *temp = strdup(arg);
+          char result[MAX_INPUT_SIZE] = "";
+
+          char *token = strtok(temp, " ");
+
+          while (token != NULL)
+          {
+            strcat(result, token);
+            strcat(result, " ");
+            token = strtok(NULL, " ");
+          }
+
+          strcpy(arg, result);
+          free(temp);
+        }
+
+        // Split by delimeter '"' and reconstruct the string
+        char *temp = strdup(arg);
+        char result[MAX_INPUT_SIZE] = "";
+
+        char *token = strtok(temp, "\"");
+
+        while (token != NULL)
+        {
+          strcat(result, token);
+          token = strtok(NULL, "\"");
+        }
+
+        strcpy(arg, result);
+        free(temp);
+
+        // Remove trailing spaces from the argument
+        trimTrailing(arg);
       }
 
-      strcpy(arg, result);
-      free(temp);
-
-      // Remove trailing spaces from the argument
-      trimTrailing(arg);
       // Print the argument after "echo "
       printf("%s\n", arg);
     }
