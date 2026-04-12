@@ -133,6 +133,54 @@ int main(int argc, char **argv)
         trimTrailing(arg);
       }
 
+      int len = strlen(arg);
+      char result[MAX_INPUT_SIZE] = "";
+      int escaped_space = 0;
+      int j = 0;
+
+      for (size_t i = 0; i < len; i++)
+      {
+        if (arg[i] == '\\')
+        {
+          i++;
+          // skip the backslash, look at next char
+
+          switch (arg[i])
+          {
+          case ' ':
+            result[j++] = ' ';
+            escaped_space = 1;
+            break; // \ + space = literal space
+          case '\\':
+            result[j++] = '\\';
+            break; // \\ = single backslash
+          case '\'':
+            result[j++] = '\'';
+            break; // \' = literal single quote
+          case 'n':
+            result[j++] = 'n';
+            break; // \n = just n (not newline)
+          default:
+            result[j++] = arg[i];
+            break; // anything else, keep the char
+          }
+        }
+        else if (arg[i] == ' ')
+        {
+          if (j > 0 && result[j - 1] != ' ' || escaped_space == 0)
+          { // only add one space
+            result[j++] = ' ';
+          }
+        }
+        else
+        {
+          result[j++] = arg[i]; // normal character, copy as is
+        }
+      }
+      result[j] = '\0';
+
+      strcpy(arg, result);
+
       // Print the argument after "echo "
       printf("%s\n", arg);
     }
