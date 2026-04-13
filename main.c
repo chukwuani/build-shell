@@ -8,244 +8,142 @@
 #define MAX_INPUT_SIZE 1024
 #define MAX_ARGS 64
 
+// Parses a string into args[], respecting quotes and backslashes
+// Returns arg_count
+int parseArgs(char *input, char **args)
+{
+  int arg_count = 0;
+  int i = 0;
+  int in_single_quote = 0;
+  int in_double_quote = 0;
+  char buffer[MAX_INPUT_SIZE];
+  int j = 0;
+
+  while (input[i] != '\0' && arg_count < MAX_ARGS - 1)
+  {
+    if (input[i] == '\'' && !in_double_quote)
+    {
+      in_single_quote = !in_single_quote;
+      i++;
+    }
+    else if (input[i] == '"' && !in_single_quote)
+    {
+      in_double_quote = !in_double_quote;
+      i++;
+    }
+    else if (input[i] == '\\' && !in_single_quote)
+    {
+      i++;
+      switch (input[i])
+      {
+        case ' ':  buffer[j++] = ' ';  break;
+        case '\\': buffer[j++] = '\\'; break;
+        case '\'': buffer[j++] = '\''; break;
+        case '"':  buffer[j++] = '"';  break;
+        case 'n':  buffer[j++] = 'n';  break;
+        default:   buffer[j++] = input[i]; break;
+      }
+      i++;
+    }
+    else if (input[i] == ' ' && !in_single_quote && !in_double_quote)
+    {
+      // Space outside quotes = argument boundary
+      if (j > 0)
+      {
+        buffer[j] = '\0';
+        args[arg_count++] = strdup(buffer);
+        j = 0;
+      }
+      i++;
+    }
+    else
+    {
+      buffer[j++] = input[i++];
+    }
+  }
+
+  // Grab the last token if any
+  if (j > 0)
+  {
+    buffer[j] = '\0';
+    args[arg_count++] = strdup(buffer);
+  }
+
+  args[arg_count] = NULL;
+  return arg_count;
+}
+
 int main(int argc, char **argv)
 {
-  // Flush after every printf
   setbuf(stdout, NULL);
 
   puts("### Shell Version 1.0.0 ###");
   puts("Welcome to my shell! Type 'exit' to quit.\n");
 
-  // Infinite shell loop
   while (1)
   {
     fputs("> ", stdout);
 
-    // Read a line of input from the user
     char input[MAX_INPUT_SIZE];
     fgets(input, sizeof(input), stdin);
-
-    // Remove the newline character if present
     trimTrailing(input);
 
-    // Start checking builtins
     if (strcmp(input, "exit") == 0)
-    {
       break;
-    }
-    else if (strncmp(input, "echo ", 5) == 0)
+
+    char *args[MAX_ARGS];
+    int arg_count = parseArgs(input, args);
+
+    if (arg_count == 0)
+      continue;
+
+    // Builtins
+    if (strcmp(args[0], "echo") == 0)
     {
-      char arg[MAX_INPUT_SIZE];
-      strcpy(arg, input + 5);
-
-      if (arg[0] == '\'')
+      for (int i = 1; i < arg_count; i++)
       {
-        // Check if the argument is enclosed in single quotes
-        if (arg[0] == '\'' && arg[strlen(arg) - 1] == '\'')
-        {
-          // Remove the single quotes from the back
-          // Copy the remain content except the first quote back into arg
-          arg[strlen(arg) - 1] = '\0';
-          memmove(arg, arg + 1, strlen(arg));
-        }
-        else
-        {
-          // Else split by delimeter ' ' and reconstruct the string with spaces in between
-          char *temp = strdup(arg);
-          char result[MAX_INPUT_SIZE] = "";
-
-          char *token = strtok(temp, " ");
-
-          while (token != NULL)
-          {
-            strcat(result, token);
-            strcat(result, " ");
-            token = strtok(NULL, " ");
-          }
-
-          strcpy(arg, result);
-          free(temp);
-        }
-
-        // Split by delimeter '\'' and reconstruct the string
-        char *temp = strdup(arg);
-        char result[MAX_INPUT_SIZE] = "";
-
-        char *token = strtok(temp, "\'");
-
-        while (token != NULL)
-        {
-          trimTrailing(token);
-          strcat(result, token);
-          token = strtok(NULL, "\'");
-        }
-
-        strcpy(arg, result);
-        free(temp);
-
-        // Remove trailing spaces from the argument
-        trimTrailing(arg);
+        if (i > 1) printf(" ");
+        printf("%s", args[i]);
       }
-      else if (arg[0] == '"')
-      {
-        // Check if the argument is enclosed in double quotes
-        if (arg[0] == '"' && arg[strlen(arg) - 1] == '"')
-        {
-          // Remove the single quotes from the back
-          // Copy the remain content except the first quote back into arg
-          arg[strlen(arg) - 1] = '\0';
-          memmove(arg, arg + 1, strlen(arg));
-        }
-        else
-        {
-          char *temp = strdup(arg);
-          char result[MAX_INPUT_SIZE] = "";
-
-          char *token = strtok(temp, " ");
-
-          while (token != NULL)
-          {
-            strcat(result, token);
-            strcat(result, " ");
-            token = strtok(NULL, " ");
-          }
-
-          strcpy(arg, result);
-          free(temp);
-        }
-
-        // Split by delimeter '"' and reconstruct the string
-        char *temp = strdup(arg);
-        char result[MAX_INPUT_SIZE] = "";
-
-        char *token = strtok(temp, "\"");
-
-        while (token != NULL)
-        {
-          strcat(result, token);
-          token = strtok(NULL, "\"");
-        }
-
-        strcpy(arg, result);
-        free(temp);
-
-        // Remove trailing spaces from the argument
-        trimTrailing(arg);
-      }
-
-      int len = strlen(arg);
-      char result[MAX_INPUT_SIZE] = "";
-      int escaped_space = 0;
-      int j = 0;
-
-      for (size_t i = 0; i < len; i++)
-      {
-        if (arg[i] == '\\')
-        {
-          i++;
-          // skip the backslash, look at next char
-
-          switch (arg[i])
-          {
-          case ' ':
-            result[j++] = ' ';
-            escaped_space = 1;
-            break; // \ + space = literal space
-          case '\\':
-            result[j++] = '\\';
-            break; // \\ = single backslash
-          case '\'':
-            result[j++] = '\'';
-            break; // \' = literal single quote
-          case 'n':
-            result[j++] = 'n';
-            break; // \n = just n (not newline)
-          default:
-            result[j++] = arg[i];
-            break; // anything else, keep the char
-          }
-        }
-        else if (arg[i] == ' ')
-        {
-          if (j > 0 && result[j - 1] != ' ' || escaped_space == 0)
-          { // only add one space
-            result[j++] = ' ';
-          }
-        }
-        else
-        {
-          result[j++] = arg[i]; // normal character, copy as is
-        }
-      }
-      result[j] = '\0';
-
-      strcpy(arg, result);
-
-      // Print the argument after "echo "
-      printf("%s\n", arg);
+      printf("\n");
     }
-    else if (strncmp(input, "type ", 5) == 0)
+    else if (strcmp(args[0], "type") == 0)
     {
-      char arg[MAX_INPUT_SIZE];
-      strcpy(arg, input + 5);
-
-      // For builtin inputs like echo...
-      if (!strcmp(arg, "type") || !strcmp(arg, "echo") || !strcmp(arg, "exit"))
+      if (arg_count < 2)
       {
-        printf("%s is a shell builtin\n", arg);
+        fprintf(stderr, "type: missing argument\n");
+      }
+      else if (!strcmp(args[1], "type") || !strcmp(args[1], "echo") || !strcmp(args[1], "exit") || !strcmp(args[1], "cd"))
+      {
+        printf("%s is a shell builtin\n", args[1]);
       }
       else
       {
-        // Check if argument is an exec file
-        char *filePath = locateExecFile(arg);
-
+        char *filePath = locateExecFile(args[1]);
         if (strlen(filePath) > 0)
-        {
-          printf("%s is %s\n", arg, filePath);
-        }
+          printf("%s is %s\n", args[1], filePath);
         else
-        {
-          printf("%s: not found\n", arg);
-        }
+          printf("%s: not found\n", args[1]);
       }
     }
-    else if (strncmp(input, "cd ", 3) == 0)
+    else if (strcmp(args[0], "cd") == 0)
     {
-      char dir[MAX_INPUT_SIZE];
-      strcpy(dir, input + 3);
+      char *dir = arg_count >= 2 ? args[1] : getenv("HOME");
 
-      // Check for "~" and replace with home directory
       if (strcmp(dir, "~") == 0)
-      {
-        char *homeDir = getenv("HOME");
-
-        if (homeDir != NULL)
-          strcpy(dir, homeDir);
-      }
+        dir = getenv("HOME");
 
       if (chdir(dir) != 0)
         fprintf(stderr, "%s: No such file or directory\n", dir);
     }
     else
     {
-      char *token = strtok(input, " \t");
-      char *args[MAX_ARGS]; // This is our own "argv"
-      int arg_count = 0;    // This is our own "argc"
-
-      while (token != NULL && arg_count < MAX_ARGS - 1)
-      {
-        args[arg_count++] = token;
-        token = strtok(NULL, " \t");
-      }
-
-      args[arg_count] = NULL;
-
-      if (arg_count == 0)
-        continue;
-
-      // Execute
       execute(args);
     }
+
+    // Free strdup'd args
+    for (int i = 0; i < arg_count; i++)
+      free(args[i]);
   }
 
   return 0;
