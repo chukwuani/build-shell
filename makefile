@@ -1,9 +1,17 @@
 CC = gcc
-SRC = main.c utils/utils.c
-OUT = shell.exe
+CFLAGS = -Wall -Wextra -g
 
-all:
-	$(CC) $(SRC) -o $(OUT)
+SRCS = main.c utils/utils.c builtins/builtins.c
+OBJS = $(SRCS:.c=.o)
+
+shell: $(OBJS)
+	$(CC) $(CFLAGS) -o shell.exe $(OBJS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+run: shell
+	./shell.exe
 
 clean:
-	del $(OUT)
+	rm -f $(OBJS) shell.exe
