@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include "utils/utils.h"
 
@@ -36,12 +37,24 @@ int parseArgs(char *input, char **args)
       i++;
       switch (input[i])
       {
-        case ' ':  buffer[j++] = ' ';  break;
-        case '\\': buffer[j++] = '\\'; break;
-        case '\'': buffer[j++] = '\''; break;
-        case '"':  buffer[j++] = '"';  break;
-        case 'n':  buffer[j++] = 'n';  break;
-        default:   buffer[j++] = input[i]; break;
+      case ' ':
+        buffer[j++] = ' ';
+        break;
+      case '\\':
+        buffer[j++] = '\\';
+        break;
+      case '\'':
+        buffer[j++] = '\'';
+        break;
+      case '"':
+        buffer[j++] = '"';
+        break;
+      case 'n':
+        buffer[j++] = 'n';
+        break;
+      default:
+        buffer[j++] = input[i];
+        break;
       }
       i++;
     }
@@ -73,6 +86,149 @@ int parseArgs(char *input, char **args)
   return arg_count;
 }
 
+int handleRedirection(char **args)
+{
+  int i = 0;
+
+  char *outputFile;
+  char *exeCommand[MAX_ARGS];
+
+  while (args[i] != NULL)
+  {
+    // Overwrite to stdout
+    if (strcmp(args[i], "1>") == 0 || strcmp(args[i], ">") == 0)
+    {
+      if (args[i + 1] == NULL)
+      {
+        fprintf(stderr, "Syntax error: expected filename after '>'\n");
+        return -1;
+      }
+
+      outputFile = args[i + 1];
+
+      for (int j = 0; j < i; j++)
+      {
+        exeCommand[j] = args[j];
+      }
+
+      exeCommand[i] = NULL;
+
+      int saved_stdout = dup(STDOUT_FILENO);
+      int fd = open(outputFile, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+
+      dup2(fd, STDOUT_FILENO);
+      close(fd);
+
+      execute(exeCommand);
+
+      dup2(saved_stdout, STDOUT_FILENO);
+      close(saved_stdout);
+
+      return 1;
+    }
+    
+    // Overwrite to stderr
+    if (strcmp(args[i], "2>") == 0)
+    {
+      if (args[i + 1] == NULL)
+      {
+        fprintf(stderr, "Syntax error: expected filename after '>'\n");
+        return -1;
+      }
+
+      outputFile = args[i + 1];
+
+      for (int j = 0; j < i; j++)
+      {
+        exeCommand[j] = args[j];
+      }
+
+      exeCommand[i] = NULL;
+
+      int saved_stderr = dup(STDERR_FILENO);
+      int fd = open(outputFile, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+
+      dup2(fd, STDERR_FILENO);
+      close(fd);
+
+      execute(exeCommand);
+
+      dup2(saved_stderr, STDERR_FILENO);
+      close(saved_stderr);
+
+      return 1;
+    }
+
+    // Append to stdout
+    if (strcmp(args[i], "1>>") == 0 || strcmp(args[i], ">>") == 0)
+    {
+      if (args[i + 1] == NULL)
+      {
+        fprintf(stderr, "Syntax error: expected filename after '>'\n");
+        return -1;
+      }
+
+      outputFile = args[i + 1];
+
+      for (int j = 0; j < i; j++)
+      {
+        exeCommand[j] = args[j];
+      }
+
+      exeCommand[i] = NULL;
+
+      int saved_stdout = dup(STDOUT_FILENO);
+      int fd = open(outputFile, O_CREAT | O_WRONLY | O_APPEND, 0644);
+
+      dup2(fd, STDOUT_FILENO);
+      close(fd);
+
+      execute(exeCommand);
+
+      dup2(saved_stdout, STDOUT_FILENO);
+      close(saved_stdout);
+
+      return 1;
+    }
+
+    // Append to stderr
+    if (strcmp(args[i], "2>>") == 0)
+    {
+      if (args[i + 1] == NULL)
+      {
+        fprintf(stderr, "Syntax error: expected filename after '>'\n");
+        return -1;
+      }
+
+      outputFile = args[i + 1];
+
+      for (int j = 0; j < i; j++)
+      {
+        exeCommand[j] = args[j];
+      }
+
+      exeCommand[i] = NULL;
+
+      int saved_stderr = dup(STDERR_FILENO);
+      int fd = open(outputFile, O_CREAT | O_WRONLY | O_APPEND, 0644);
+
+      dup2(fd, STDERR_FILENO);
+      close(fd);
+
+      execute(exeCommand);
+
+      dup2(saved_stderr, STDERR_FILENO);
+      close(saved_stderr);
+
+      return 1;
+    }
+
+    i++;
+  }
+
+  return 0;
+}
+
 int main(int argc, char **argv)
 {
   setbuf(stdout, NULL);
@@ -94,6 +250,11 @@ int main(int argc, char **argv)
     char *args[MAX_ARGS];
     int arg_count = parseArgs(input, args);
 
+    int redirect = handleRedirection(args);
+
+    if (redirect == 1)
+      continue;
+
     if (arg_count == 0)
       continue;
 
@@ -102,7 +263,8 @@ int main(int argc, char **argv)
     {
       for (int i = 1; i < arg_count; i++)
       {
-        if (i > 1) printf(" ");
+        if (i > 1)
+          printf(" ");
         printf("%s", args[i]);
       }
       printf("\n");
