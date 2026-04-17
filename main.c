@@ -51,8 +51,14 @@ char *custom_generator(const char *text, int state)
 
 char **custom_completion(const char *text, int start, int end)
 {
-  rl_attempted_completion_over = 1; // Prevent filename completion fallback
-  return rl_completion_matches(text, custom_generator);
+  rl_attempted_completion_over = 1;
+
+  char **matches = rl_completion_matches(text, custom_generator);
+
+  if (matches == NULL)
+    rl_ding(); // bell on no matches
+
+  return matches;
 }
 
 int main(int argc, char **argv)
@@ -63,6 +69,9 @@ int main(int argc, char **argv)
   puts("### Shell Version 1.0.0 ###");
   puts("Welcome to my shell! Type 'exit' to quit.\n");
 
+  rl_completion_display_matches_hook = NULL;
+  rl_bind_key('\t', rl_complete);
+  rl_variable_bind("bell-style", "audible");
   rl_attempted_completion_function = custom_completion;
 
   while (1)
