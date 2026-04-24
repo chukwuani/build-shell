@@ -18,3 +18,6 @@ REPLs, builtin commands, and more.
 - [x] Builtin commands: `cd`, `pwd`, `echo`, `type`
 - [x] PATH lookup for executables
 - [x] Output redirection (`>`, `>>`)
+- [x] Tab completion for builtin commands
+- [x] Tab completion for executables in PATH
+- [x] Tab completion with bell on no matches

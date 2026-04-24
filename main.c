@@ -3,12 +3,14 @@
 #include <string.h>
 #include <readline/history.h>
 #include <readline/readline.h>
+#include <dirent.h>
 
 #include "utils/utils.h"
 #include "builtins/builtins.h"
 
 #define MAX_INPUT_SIZE 1024
 #define MAX_ARGS 64
+int start_index = 0;
 
 #define ECHO_CMD "echo"
 #define EXIT_CMD "exit"
@@ -24,17 +26,61 @@ char *builtins[] = {
     TYPE_CMD,
     PWD_CMD,
     CHDIR_CMD};
+char **executables;
+
+void load_path_commands()
+{
+  char *path = getenv("PATH");
+  char *pathCopy;
+
+  if (!path)
+    return;
+
+  pathCopy = strdup(path);
+  char *token = strtok(pathCopy, ":");
+
+  while (token != NULL)
+  {
+    DIR *dir = opendir(token);
+
+    if (!dir)
+    {
+      token = strtok(NULL, ":");
+      continue;
+    }
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)))
+    {
+      if (entry->d_name[0] == '.')
+        continue;
+
+      executables = realloc(executables, (start_index + 1) * sizeof(char *));
+      executables[start_index++] = strdup(entry->d_name);
+    }
+
+    closedir(dir);
+
+    token = strtok(NULL, ":");
+  }
+
+  free(pathCopy);
+}
 
 char *custom_generator(const char *text, int state)
 {
-  static int list_index, len;
+  static int list_index, exec_index, len, found;
   char *match;
 
   if (!state)
   {
     list_index = 0;
+    exec_index = 0;
     len = strlen(text);
+    found = 0;
   }
+
+   if (found) return NULL;
 
   while (builtins[list_index] != NULL)
   {
@@ -42,6 +88,18 @@ char *custom_generator(const char *text, int state)
 
     if (strncmp(match, text, len) == 0)
     {
+      found = 1;
+      return strdup(match);
+    }
+  }
+
+  while (exec_index < start_index)
+  {
+    match = executables[exec_index++];
+
+    if (strncmp(match, text, len) == 0)
+    {
+      found = 1;
       return strdup(match);
     }
   }
@@ -68,6 +126,10 @@ int main(int argc, char **argv)
 
   puts("### Shell Version 1.0.0 ###");
   puts("Welcome to my shell! Type 'exit' to quit.\n");
+
+  load_path_commands();
+
+  printf("Loaded %d executables from PATH\n", start_index);
 
   rl_completion_display_matches_hook = NULL;
   rl_bind_key('\t', rl_complete);
